@@ -20,3 +20,8 @@ class UserResponse(BaseModel):
     email: str
     phone_number: str
     username: str | None
+
+class RemoveProductFromCart(BaseModel):
+    user_id: str
+    product_id: str
+    outlet_id: str
