@@ -1,5 +1,6 @@
 from typing import Optional
 from fastapi import HTTPException
+from http import HTTPStatus
 
 from ..controller.models import AddProductRequest, CartProductInfo, RemoveProductRequest
 from ..domain.cart import Cart
@@ -23,7 +24,7 @@ class CartService:
         if not cart:
             raise HTTPException(status_code=404, detail="Cart not found")
 
-        product = self.product_service  .get_product(add_product_request.product_id, add_product_request.outlet_id)
+        product = self.product_service.get_product(add_product_request.product_id, add_product_request.outlet_id)
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
 
@@ -43,22 +44,34 @@ class CartService:
             return None
         return self.user_carts.get(user.user_id)
 
-    def remove_product_from_cart(self, request: RemoveProductRequest):
-        user = self.user_service.get_user(request.user_id)
-        if not user:
-            raise ValueError("User not found")
-        
+    def remove_product_from_cart(self, remove_product_request: RemoveProductRequest) -> Cart:
+        user = self.user_service.fetch_user_by_id(remove_product_request.user_id)
+        if user is None:
+            # logger.warning(f"User not found: {remove_product_request.user_id}")
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail=f"User '{remove_product_request.user_id}' not found",
+            )
+
         cart = self.fetch_cart_for_user(user)
-        if not cart:
-            raise ValueError("Car not found")
+        if cart is None:
+            # logger.warning(f"Cart not found for user: {remove_product_request.user_id}")
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail=f"Cart not found for user '{remove_product_request.user_id}'",
+            )
 
-        product = self.product_service.get_product(request.product_id, request.outlet_id)
-        if not product:
-            raise ValueError("Product not found")
+        product_to_remove = next(
+            (p for p in cart.products if p.product_id == remove_product_request.product_id),
+            None,
+        )
+        if product_to_remove is None:
+            # logger.warning(f"Product '{remove_product_request.product_id}' not in cart for user '{remove_product_request.user_id}'")
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail=f"Product '{remove_product_request.product_id}' not found in cart",
+            )
 
-        if product.id not in cart.items:
-            raise ValueError("Product not found")
-
-        del cart.items[product_id]
-        
+        cart.products.remove(product_to_remove)
+        # logger.info(f"Removed product '{remove_product_request.product_id}' from cart for user '{remove_product_request.user_id}'")
         return cart
