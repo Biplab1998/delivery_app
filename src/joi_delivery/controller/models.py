@@ -21,7 +21,11 @@ class UserResponse(BaseModel):
     phone_number: str
     username: str | None
 
-class RemoveProductFromCart(BaseModel):
+class RemoveProductRequest(BaseModel):
     user_id: str
     product_id: str
     outlet_id: str
+
+class RemoveProductFromCart(BaseModel):
+    cart:dict
+    products:list

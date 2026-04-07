@@ -1,7 +1,7 @@
 from typing import Optional
 from fastapi import HTTPException
 
-from ..controller.models import AddProductRequest, CartProductInfo
+from ..controller.models import AddProductRequest, CartProductInfo, RemoveProductRequest
 from ..domain.cart import Cart
 from ..domain.user import User
 from ..service.product_service import ProductService
@@ -43,7 +43,7 @@ class CartService:
             return None
         return self.user_carts.get(user.user_id)
 
-    def remove_product_from_cart(self, request: RemoveProductFromCart):
+    def remove_product_from_cart(self, request: RemoveProductRequest):
         user = self.user_service.get_user(request.user_id)
         if not user:
             raise ValueError("User not found")
@@ -60,4 +60,5 @@ class CartService:
             raise ValueError("Product not found")
 
         del cart.items[product_id]
+        
         return cart
